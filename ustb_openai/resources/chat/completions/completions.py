@@ -4,9 +4,11 @@ from typing import (
     Any,
     Generator,
     Iterable,
+    Literal,
     Mapping,
     Optional,
-    Union
+    Union,
+    overload
 )
 
 import httpx_sse
@@ -27,6 +29,28 @@ class Completions:
     def __init__(self, chat: Chat) -> None:
         self._client = chat._client
 
+    @overload
+    def create(
+        self,
+        *,
+        messages: Iterable[Mapping[str, str]],
+        model: str,
+        stream: Literal[True],
+        **kwargs_ignored: Any
+    ) -> Generator[ChatCompletion, Any, None]:
+        ...
+
+    @overload
+    def create(
+        self,
+        *,
+        messages: Iterable[Mapping[str, str]],
+        model: str,
+        stream: Optional[Literal[False]] = None,
+        **kwargs_ignored: Any
+    ) -> ChatCompletion:
+        ...
+
     def create(
         self,
         *,
@@ -43,8 +67,8 @@ class Completions:
         :param stream: If `True`, returns response chunks via generator,
             otherwise, returns complete response after full processing;
         :param kwargs_ignored: Additional keyword arguments are silently ignored;
-        :rtype: Union[ChatCompletion, Generator];
-        :returns: A generator or a full `ChatCompletion`, depending on the `stream` argument;
+        :rtype: ChatCompletion | Generator[ChatCompletion, Any, None];
+        :returns: A full `ChatCompletion` for default, or a generator for `stream=True`;
         """
         data = {
             "content": "",
