@@ -21,8 +21,6 @@ from ....types.chat import ChatCompletion
 
 
 class Completions:
-    _API_COMPOSE_CHAT = "/site/ai/compose_chat"
-
     _chat: Chat
     _client: USTBOpenAI
 
@@ -56,18 +54,26 @@ class Completions:
             "model_name": model,
             "internet_search": 2
         }
+
         for m in messages:
             if "role" not in m or "content" not in m:
                 raise ValueError("Role and content are required")
-            if m["role"] not in ("user", "system"):
-                raise ValueError(f"Unknown role: {m['role']}")
-            if not data["content"]:
-                data["content"] = ("(system) " if m["role"] == "system" else "") + m["content"]
-            else:
-                data["history"].append({
-                    "role": m["role"],
-                    "content": m["content"]
-                })
+            role = m["role"].lower()
+            content = m["content"].strip()
+            if role not in ("user", "system", "assistant"):
+                raise ValueError(f"Unsupported role: {role}")
+            assert isinstance(data["history"], list)
+            data["history"].append({
+                "role": role,
+                "content": content
+            })
+
+        if not data["history"]:
+            raise ValueError("No message provided")
+        last = data["history"].pop()
+        if last["role"] != "user":
+            raise ValueError(f"The last message must be a user prompt, got: {last['role']}")
+        data["content"] = last["content"]
 
         body = FormRequestBody(data)
         headers = self._client._client.headers.copy()
@@ -76,7 +82,7 @@ class Completions:
             httpx_sse.connect_sse(
                 self._client._client,
                 "POST",
-                Completions._API_COMPOSE_CHAT,
+                "/site/ai/compose_chat",
                 content=body.get_content(),
                 headers=headers
             )
