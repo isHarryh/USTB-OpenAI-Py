@@ -5,6 +5,9 @@ OpenAI style API for accessing the USTB hosted LLM
 
 <sup> This project only supports Chinese docs. If you are an English user, feel free to contact us. </sup>
 
+> **公告：**  
+> 已于 2025 年 2 月 28 日发现平台不允许使用游客登录。此程序暂时无法使用。
+
 ## 介绍 <sub>Intro</sub>
 
 本项目旨在实现一个可以直接与“北京科技大学 LLM 平台”进行交互的客户端 API 库，并且在接口调用上与 [openai-python](https://github.com/openai/openai-python) 保持最大的一致性。
