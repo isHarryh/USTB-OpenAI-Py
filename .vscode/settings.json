@@ -2,6 +2,9 @@
     "python.analysis.typeCheckingMode": "standard",
     "cSpell.language": "en,en-US,en-GB",
     "cSpell.words": [
-        "ustb"
+        "httpx",
+        "pydantic",
+        "ustb",
+        "vjuid"
     ]
 }

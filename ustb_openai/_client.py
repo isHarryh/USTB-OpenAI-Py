@@ -24,13 +24,15 @@ class USTBOpenAI:
         *,
         base_url: str = DEFAULT_BASE_URL,
         easy_session: Optional[str] = None,
+        vjuid_login: Optional[str] = None,
         timeout: Optional[Union[float, httpx.Timeout]] = DEFAULT_TIMEOUT,
         **kwargs_ignored
     ) -> None:
         """Initializes a USTB OpenAI client.
 
         :param base_url: The base URL to the AI assistant webpage of USTB;
-        :param easy_session: The authorization cookie value, leave `None` to auto apply a new one;
+        :param easy_session: The cookie value of `easy_session` (no-login mode), leave `None` to auto apply a new one;
+        :param vjuid_login: The cookie value of `cookie_vjuid_login` (login-mode);
         :param timeout: The timeout (seconds) on all API operations;
         """
         self._client = httpx.Client()
@@ -44,12 +46,19 @@ class USTBOpenAI:
                 raise ValueError("Easy session must have 32 alpha-numeric characters")
             self._client.cookies["easy_session"] = easy_session.lower()
 
+        if vjuid_login:
+            self._client.cookies["cookie_vjuid_login"] = vjuid_login
+
         self.chat = Chat(self)
         self.info = Info(self)
 
     @property
     def easy_session(self) -> str:
-        return self._client._cookies["easy_session"]
+        return self._client.cookies["easy_session"]
+
+    @property
+    def vjuid_login(self) -> str:
+        return self._client.cookies["cookie_vjuid_login"]
 
     def _api_get(
         self,
