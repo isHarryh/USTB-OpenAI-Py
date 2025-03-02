@@ -5,14 +5,11 @@ OpenAI style API for accessing the USTB hosted LLM
 
 <sup> This project only supports Chinese docs. If you are an English user, feel free to contact us. </sup>
 
-> **公告：**  
-> 已于 2025 年 2 月 28 日发现平台不允许使用游客登录。此程序暂时无法使用。
-
 ## 介绍 <sub>Intro</sub>
 
 本项目旨在实现一个可以直接与“北京科技大学 LLM 平台”进行交互的客户端 API 库，并且在接口调用上与 [openai-python](https://github.com/openai/openai-python) 保持最大的一致性。
 
-北京科技大学 LLM 平台（内网访问 http://chat.ustb.edu.cn ），其官方名称是“北科大 AI 助手”，它提供北科大本地部署的 LLM 的网页版对话服务。要想使用该平台，您必须接入北科大的校园网。
+北京科技大学 LLM 平台（内网访问 http://chat.ustb.edu.cn ），其官方名称是“北科大 AI 助手”，它提供北科大本地部署的 LLM 的网页版对话服务。
 
 ## 使用方法 <sub>Usage</sub>
 
@@ -20,22 +17,65 @@ OpenAI style API for accessing the USTB hosted LLM
 
 1. 安装 [Python](https://www.python.org) >= 3.8
 2. 安装以下依赖库：
-   ```
+   ```txt
    httpx>=0.28
    httpx-sse>=0.4
    pydantic>=2.10
    ```
+3. 接入北科大的校园网。
+
+### 准备令牌
+
+> 自 2025 年 2 月 28 日起，服务器已经不允许游客登录（使用 `easy_session` Cookie），取而代之的是北科大 SSO 认证登录（使用 `cookie_vjuid_login` Cookie）。
+
+在进行任何操作前，您需要通过北科大 SSO 认证，获得一个 `cookie_vjuid_login` Cookie 令牌。
+
+您可以在网页版的开发人员工具中，直接复制此 Cookie 令牌的值。或者，您也可以通过我们的 [USTB-SSO](https://github.com/isHarryh/USTB-SSO) 库来进行认证：
+
+1. 安装 `ustb-sso` 库；
+2. 运行以下代码：
+   ```python
+   from ustb_sso import HttpxAuthSession, prefabs
+
+   auth = HttpxAuthSession(**prefabs.CHAT_USTB_EDU_CN)
+
+   print("Starting authentication...")
+   auth.open_auth().use_wechat_auth().use_qr_code()
+
+   with open("qr.png", "wb") as f:
+       f.write(auth.get_qr_image())
+
+   print("Waiting for confirmation... Please scan the QR code")
+   pass_code = auth.wait_for_pass_code()
+
+   print("Validating...")
+   rsp = auth.complete_auth(pass_code)
+
+   cookie_name = "cookie_vjuid_login"
+   cookie_value = auth.client.cookies[cookie_name]
+   print("Cookie:", cookie_name, "=", cookie_value)
+   ```
+ 3. 在代码运行期间，会在本地生成 `qr.png` 图片文件。请使用微信扫描此图片中的二维码，从而完成认证；
+ 4. 顺利完成认证后，Cookie 令牌将被保存在 `cookie_value` 变量中。
+
+> 可以将此令牌的值保存到本地，以便下次使用。需要注意，令牌可能具有有效时间限制。
 
 ### 快速上手
 
-首先，您需要克隆或下载本仓库，并将 `ustb_openai` 文件夹放到本地工作目录。然后，在代码中导入 `ustb_openai` 模块。
+安装 `ustb-openai` 库：
+
+```bash
+pip install ustb-openai
+```
 
 以下示例代码实现了一个最简单的对话功能：
 
 ```python
 from ustb_openai import USTBOpenAI
 
-client = USTBOpenAI()
+client = USTBOpenAI(vjuid_login=cookie_value)
+
+print("Your user number:", client.info.get_user_info().user_number)
 
 stream = client.chat.completions.create(
     messages=[
@@ -45,6 +85,7 @@ stream = client.chat.completions.create(
     stream=True
 )
 
+print("\nResponse:")
 for chunk in stream:
     print(chunk.choices[0].delta.content or "", end="")
 ```
